@@ -1,5 +1,6 @@
 import numpy as np
 import distances as dst
+from statistics import mode
 
 EPS = 1e-5
 
@@ -16,23 +17,25 @@ class KNNClassifier:
         self.train_X = X
         self.train_y = y
 
-    def find_kneighbors(self, X, return_distance):
+    def find_kneighbors(self, X, return_distance=False):
         all_distances = dst.euclidean_distance(X, self.train_X)
         k_distances = []
-        k_indexes = []
+        k_indices = []
         for i in range(len(X)):
             el_distances = [(index, value) for index, value in enumerate(all_distances[i])]
             el_distances.sort(key=lambda x: x[1])
             k_distances.append(map(lambda x: x[1], el_distances[:self.k]))
-            k_indexes.append(map(lambda x: x[0], el_distances[:self.k]))
+            k_indices.append(map(lambda x: x[0], el_distances[:self.k]))
         if return_distance:
-            return (np.array(k_distances), np.array(k_indexes))
+            return (np.array(k_distances), np.array(k_indices))
         else:
-            return np.array(k_indexes)
+            return np.array(k_indices)
 
     def predict(self, X):
-        #####################
-        # your code is here #
-        #####################
-        pass
+        kneighbors = self.find_kneighbors(X)
+        y = []
+        for i in range(len(kneighbors)):
+            classes = [self.train_y[j] for j in kneighbors[i]]
+            y.append(mode(classes))
+        return y
 
