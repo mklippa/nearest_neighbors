@@ -1,6 +1,6 @@
 import numpy as np
 import distances as dst
-from statistics import mode
+from sklearn.neighbors import NearestNeighbors
 
 EPS = 1e-5
 
@@ -12,10 +12,15 @@ class KNNClassifier:
         self.metric = metric
         self.weights = weights
         self.test_block_size = test_block_size
+        if strategy is not "my_own":
+            self.neigh = NearestNeighbors(k, algorithm=strategy, metric=metric)
 
     def fit(self, X, y):
-        self.train_X = X
-        self.train_y = y
+        if self.strategy is not "my_own":
+            self.neigh.fit(X, y)
+        else:
+            self.train_X = X
+            self.train_y = y
 
     def find_kneighbors(self, X, return_distance=False):
         all_distances = dst.euclidean_distance(X, self.train_X)
@@ -34,7 +39,18 @@ class KNNClassifier:
             return np.array(k_indices)
 
     def predict(self, X):
-        distances, indices = self.find_kneighbors(X)
+        if self.strategy is not "my_own":
+            if self.weights:
+                distances, indices = self.neigh.kneighbors(X, return_distance=True)
+            else:
+                indices = self.neigh.kneighbors(X, return_distance=False)
+                distances = [1]*len(indices)
+        else:
+            if self.weights:
+                distances, indices = self.find_kneighbors(X, return_distance=True)
+            else:
+                indices = self.find_kneighbors(X, return_distance=False)
+                distances = [1]*len(indices)
 
         y = []
         for i in range(len(indices)):
@@ -59,12 +75,4 @@ class KNNClassifier:
             else:
                 y.append(frequent_class)
         return y
-
-        # kneighbors = self.find_kneighbors(X)
-        # y = []
-        # for i in range(len(kneighbors)):
-        #     weights = kneighbors
-        #     classes = [self.train_y[j] for j in kneighbors[i]]
-        #     y.append(mode(classes))
-        # return y
 
