@@ -2,20 +2,14 @@ import numpy as np
 
 
 def euclidean_distance(x, y):
-    N = x.shape[0]
-    M = y.shape[0]
-    dists = np.zeros((N, M))
-    for i in range(M):
-        dists[:, i] = np.sum((x - y[i, :]) ** 2, axis=1) ** 0.5
-    return dists
+    return (
+        -2 * np.dot(x, y.T)
+        + np.sum(y ** 2, axis=1)
+        + np.sum(x ** 2, axis=1)[:, np.newaxis]
+    ) ** 0.5
 
 
 def cosine_distance(x, y):
-    N = x.shape[0]
-    M = y.shape[0]
-    dists = np.zeros((N, M))
-    for i in range(M):
-        numerator = np.sum(x * y[i, :], axis=1)
-        denominator = np.sum(x ** 2, axis=1) ** 0.5 * np.sum(y[i, :] ** 2) ** 0.5
-        dists[:, i] = 1 - numerator / denominator
-    return dists
+    c = np.sum(y ** 2, axis=1) ** 0.5 * np.sum(x ** 2, axis=1)[:, np.newaxis] ** 0.5
+    return 1 - np.dot(x, y.T) / c
+
