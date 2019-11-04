@@ -1,5 +1,5 @@
 import numpy as np
-import distances as dst
+
 from sklearn.neighbors import NearestNeighbors
 
 EPS = 1e-5
@@ -18,18 +18,18 @@ class KNNClassifier:
     def fit(self, X, y):
         if self.strategy is not "my_own":
             self.neigh.fit(X, y)
-        else:
-            self.X = X
-            self.y = y
+
+        self.X = X
+        self.y = y
 
     def find_kneighbors(self, X, return_distance=False):
         if self.metric is "euclidean":
-            distances = dst.euclidean_distance(X, self.X)
+            distances = euclidean_distance(X, self.X)
         else:
-            distances = dst.cosine_distance(X, self.X)
+            distances = cosine_distance(X, self.X)
 
-        k_indices = np.argpartition(distances, -self.k, axis=1)[:, -self.k :]
-        k_distances = np.take_along_axis(distances, k_indices, axis=1)
+        k_indices = np.argpartition(-distances, -self.k, axis=1)[:, -self.k :]
+        k_distances = distances[np.arange(k_indices.shape[0])[:, None], k_indices]
 
         if return_distance:
             return (k_distances, k_indices)
@@ -42,9 +42,7 @@ class KNNClassifier:
         else:
             neighbors = self.find_kneighbors(X, return_distance=self.weights)
 
-        distances, indices = (
-            neighbors if type(neighbors) is "tuple" else (None, neighbors)
-        )
+        distances, indices = neighbors if self.weights else (None, neighbors)
 
         k_nearest_classes = self.y[indices]
         counter = self.__bincount(k_nearest_classes, distances)
@@ -53,6 +51,22 @@ class KNNClassifier:
     def __bincount(self, A, distances=None):
         N = A.max() + 1
         arr = (A + (N * np.arange(A.shape[0]))[:, None]).ravel()
-        weights = distances.ravel()
         min_len = N * A.shape[0]
-        return np.bincount(arr, weights, min_len).reshape(-1, N)
+        if distances is not None:
+            return np.bincount(arr, distances.ravel(), min_len).reshape(-1, N)
+        else:
+            return np.bincount(arr, minlength=min_len).reshape(-1, N)
+
+
+def euclidean_distance(x, y):
+    return (
+        -2 * np.dot(x, y.T)
+        + np.sum(y ** 2, axis=1)
+        + np.sum(x ** 2, axis=1)[:, np.newaxis]
+    ) ** 0.5
+
+
+def cosine_distance(x, y):
+    c = np.sum(y ** 2, axis=1) ** 0.5 * np.sum(x ** 2, axis=1)[:, np.newaxis] ** 0.5
+    return 1 - np.dot(x, y.T) / c
+

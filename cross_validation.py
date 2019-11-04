@@ -2,9 +2,9 @@ from nearest_neighbors import KNNClassifier
 from sklearn.model_selection import KFold
 
 def knn_cross_val_score(X, y, k_list, score, cv=None, **kwargs):
-    knn = KNNClassifier(**kwargs)
     res = {}
     for k in k_list:
+        knn = KNNClassifier(k, **kwargs)
         res[k] = []
         kf = KFold(k)
         for train_index, test_index in kf.split(X):
