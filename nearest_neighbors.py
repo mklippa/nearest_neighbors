@@ -37,7 +37,24 @@ class KNNClassifier:
             return k_indices
 
     def predict(self, X):
-        pass
+        if self.strategy is not "my_own":
+            neighbors = self.neigh.kneighbors(X, return_distance=self.weights)
+        else:
+            neighbors = self.find_kneighbors(X, return_distance=self.weights)
+
+        if self.weights:
+            return self.__weighted_classifier(*neighbors)
+        else:
+            return self.__plain_classifier(neighbors)
+
+    def __plain_classifier(self, indices):
+        k_nearest_classes = self.y[indices]
+        (classes, counts) = np.unique(k_nearest_classes, return_counts=True)
+        i = np.argmax(counts)
+        return classes[i]
+
+    def __weighted_classifier(self, distances, indices):
+        return None
         # if self.strategy is not "my_own":
         #     if self.weights:
         #         distances, indices = self.neigh.kneighbors(X, return_distance=True)
