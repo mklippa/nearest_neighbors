@@ -42,53 +42,17 @@ class KNNClassifier:
         else:
             neighbors = self.find_kneighbors(X, return_distance=self.weights)
 
-        if self.weights:
-            return self.__weighted_classifier(*neighbors)
-        else:
-            return self.__plain_classifier(neighbors)
+        distances, indices = (
+            neighbors if type(neighbors) is "tuple" else (None, neighbors)
+        )
 
-    def __plain_classifier(self, indices):
         k_nearest_classes = self.y[indices]
-        (classes, counts) = np.unique(k_nearest_classes, return_counts=True)
-        i = np.argmax(counts)
-        return classes[i]
+        counter = self.__bincount(k_nearest_classes, distances)
+        return np.argmax(counter, axis=1)
 
-    def __weighted_classifier(self, distances, indices):
-        return None
-        # if self.strategy is not "my_own":
-        #     if self.weights:
-        #         distances, indices = self.neigh.kneighbors(X, return_distance=True)
-        #     else:
-        #         indices = self.neigh.kneighbors(X, return_distance=False)
-        #         distances = [1]*len(indices)
-        # else:
-        #     if self.weights:
-        #         distances, indices = self.find_kneighbors(X, return_distance=True)
-        #     else:
-        #         indices = self.find_kneighbors(X, return_distance=False)
-        #         distances = [1]*len(indices)
-
-        # y = []
-        # for i in range(len(indices)):
-        #     classes, weights = [
-        #         (self.train_y[k], 1 / (distances[i][j] + EPS))
-        #         for j, k in enumerate(indices[i])
-        #     ]
-
-        #     class_counter = {}
-        #     for c_w in zip(classes, weights):
-        #         if class_counter[c_w]:
-        #             class_counter[c_w][0] += 1
-        #             class_counter[c_w][1] += c_w[1]
-        #         else:
-        #             class_counter[c_w] = (1, c_w[1])
-
-        #     frequent_class = max(class_counter.items(), key=lambda x: x[1][0])[0]
-        #     heavy_class = max(class_counter.items(), key=lambda x: x[1][1])[0]
-
-        #     if self.weights:
-        #         y.append(heavy_class)
-        #     else:
-        #         y.append(frequent_class)
-        # return y
-
+    def __bincount(self, A, distances=None):
+        N = A.max() + 1
+        arr = (A + (N * np.arange(A.shape[0]))[:, None]).ravel()
+        weights = distances.ravel()
+        min_len = N * A.shape[0]
+        return np.bincount(arr, weights, min_len).reshape(-1, N)
